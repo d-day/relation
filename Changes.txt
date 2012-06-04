@@ -1,0 +1,3 @@
+ Change log.
+
+  2010/nov/14 [LFL]: coined as a library.
