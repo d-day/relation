@@ -1,11 +1,11 @@
 -- | Leonel Fonseca. 2010/nov/14.
 --   Dull test module.
 
-module T01_Relacion 
+module T01_Relation 
 
 where
 
-import qualified Data.Relacion as R
+import qualified Data.Relation as R
 import qualified Data.Set      as S
 import qualified Data.Map      as M
 import           Data.Maybe (fromMaybe)

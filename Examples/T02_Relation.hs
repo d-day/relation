@@ -1,9 +1,9 @@
 -- | Leonel Fonseca. 2010/nov/14.
---   Test module showing how to use Data.Relacion.
+--   Test module showing how to use Data.Relation.
 
-module T02_Relacion where 
+module T02_Relation where 
 
-import           Data.Relacion 
+import           Data.Relation 
 import qualified Data.Set      as S
 
 -- | Para estar en la relación lleva

@@ -1,25 +1,36 @@
-{- | 
- -  Relations are modeled as assciations between two elements.
- -  Relations offer efficient search for any of the two elements.
- -
- -  Unlike "Data.Map", an element ca be associated more than once.
- -
- -  The two purposes of this structure are:
- -
- -  1. Associating elements
- -  2. Provide efficient searches for either of the two elements.
- -
- -  Since neither 'map' nor 'fold' are implemented, you /must/ convert
- -  the structure to a list to process sequentially.
- -}     
-
-{-
-    2009/11/09. LFL. Corrected the definition of delete.
-
-    2009/11/26. LFL. Construction
--}
-
-
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Data.Relation
+-- Copyright   :  (c) DD.  2012
+--                (c) LFL. 2009
+-- License     :  BSD-style
+-- Maintainer  :  Drew Day<drewday@gmail.com>
+-- Stability   :  experimental
+-- Portability :  portable
+--
+-- Relations are modeled as assciations between two elements.
+--
+-- Relations offer efficient search for any of the two elements.
+--
+-- Unlike "Data.Map", an element ca be associated more than once.
+--
+-- The two purposes of this structure are:
+--  
+-- 1. Associating elements
+--
+-- 2. Provide efficient searches for either of the two elements.
+--
+-- Since neither 'map' nor 'fold' are implemented, you /must/ convert
+-- the structure to a list to process sequentially.
+--
+-- Changes:
+--
+-- @
+-- \ 2012.06.06.  DD. Translated to English.
+-- \ 2009.11.09. LFL. Corrected the definition of delete.
+-- \ 2009.11.26. LFL. Construction
+-- @
+--
 module Data.Relation (
 
    -- * The @Relation@ Type
@@ -28,9 +39,9 @@ module Data.Relation (
 
    -- *  Provided functionality:
  
-   -- ** Consultations
+   -- ** Questions
 
- , size         --  Tuples in the relation.
+ , size         --  # Tuples in the relation?
  , null         --  Is empty?
 
    -- ** Construction
@@ -64,8 +75,9 @@ module Data.Relation (
 
    -- ** Utilities
 
- , compactarSet --  Compact a Set of Maybe's.
-   
+ , compactSet --  Compact a Set of Maybe's.
+  
+ -- $selectops
  , (|$>) -- Restrict the range according to a subset. PICA.
   
  , (<$|) -- Restrict the domain according to a subset. PICA.
@@ -86,26 +98,25 @@ import qualified Data.Map     as M
 import qualified Data.Set     as S
 import           Data.Maybe        (isJust, fromJust, fromMaybe)
 
+-- |
+-- This implementation avoids using @"S.Set (a,b)"@ because
+-- it it is necessary to search for an item without knowing both @D@ and @R@.
+--
+-- In "S.Set", you must know both values to search.
+--
+-- Thus, we have are two maps to updated together.
+--
+-- 1. Always be careful with the associated set of the key.
+--
+-- 2. If you union two relations, apply union to the set of values.
+--
+-- 3. If you subtract, take care when handling the set of values.
+--
+-- As a multi-map, each key is asscoated with a Set of values v.
+-- 
+-- We do not allow the associations with the 'empty' Set.
+--
 
-{-
- - This implementation avoids using @"S.Set (a,b)"@ because
- - it it is necessary to search for an item without knowing both @D@ and @R@.
- -
- - In "S.Set", you must know both values to search.
- -
- - Thus, we have are two maps to updated together.
- -
- - Always be careful with the associated set of the key.
- -
- - If you union two relations, apply union to the set of values.
- -
- - If you subtract, take care when handling the set of values.
- -
- - As a multi-map, each key is asscoated with a Set of values v.
- - 
- - We do not allow the associations with the 'empty' Set.
- -
--}
 data Relation a b  = Relation { domain ::  M.Map a (S.Set b)
                               , range  ::  M.Map b (S.Set a)
                               }
@@ -145,7 +156,8 @@ fromList xs =
        flipAndSet = map ( \(x,y) -> (y, S.singleton x) )
 
 
-
+-- |
+-- Builds a List from a Relation.
 toList   ::  Relation a b -> [(a,b)]
 toList r =   concatMap
                ( \(x,y) -> zip (repeat x) (S.toList y) )
@@ -177,15 +189,20 @@ union r s       =
 
 
 ---------------------------------------------------------------
-{- This fragment provided by:
-    -- Module      :  Data.Map
-    -- Copyright   :  (c) Daan Leijen 2002
-    --                (c) Andriy Palamarchuk 2008
-    -- License     :  BSD-style
-    -- Maintainer  :  libraries@haskell.org
-    -- Stability   :  provisional
-    -- Portability :  portable
- -} 
+-- |
+-- This fragment provided by:
+--
+-- @
+-- \  Module      :  Data.Map
+-- \  Copyright   :  (c) Daan Leijen 2002
+-- \                 (c) Andriy Palamarchuk 2008
+-- \  License     :  BSD-style
+-- \  Maintainer  :  libraries\@haskell.org
+-- \  Stability   :  provisional
+-- \  Portability :  portable
+-- @
+--
+--
 foldlStrict         ::  (a -> b -> a) -> a -> [b] -> a
 foldlStrict f z xs  =   case xs of
       []     -> z
@@ -213,32 +230,32 @@ insert x y r =  -- r { domain = domain', range = range' }
    range'    =  M.insertWith S.union y (S.singleton x) (range   r)
 
 
-{- 
- - 
- - The deletion is not difficult but is delicate:
- -
- - @
-   r = { domain {  (k1, {v1a, v3})
-                 ,  (k2, {v2a})
-                 ,  (k3, {v3b, v3})
-                 }
-       , range   {  (v1a, {k1}
-                 ,  (v2a, {k2{
-                 ,  (v3 , {k1, k3}
-                 ,  (v3b, {k3}
-                 }
-      }
- - @
- -
-   To delete (k,v) in the relation do:
-    1. Working with the domain:
-       1a. Delete v from the Set VS associated with k.
-       1b. If VS is empty, delete k in the domain.
-    2. Working in the range:
-       2a. Delete k from the Set VS associated with v.
-       2b. If VS is empty, delete v in the range. 
-         
--}
+-- $deletenotes 
+-- 
+-- The deletion is not difficult but is delicate:
+--
+-- @
+--   r = { domain {  (k1, {v1a, v3})
+--                 ,  (k2, {v2a})
+--                 ,  (k3, {v3b, v3})
+--                 }
+--       , range   {  (v1a, {k1}
+--                 ,  (v2a, {k2{
+--                 ,  (v3 , {k1, k3}
+--                 ,  (v3b, {k3}
+--                 }
+--      }
+-- @
+--
+--   To delete (k,v) in the relation do:
+--    1. Working with the domain:
+--       1a. Delete v from the Set VS associated with k.
+--       1b. If VS is empty, delete k in the domain.
+--    2. Working in the range:
+--       2a. Delete k from the Set VS associated with v.
+--       2b. If VS is empty, delete v in the range. 
+--         
+--
 
 -- |  Delete an association in the relation.
 delete       ::  (Ord a, Ord b) 
@@ -280,11 +297,11 @@ memberRan y r =   isJust $ lookupRan y r
 
 
 
--- | True if the relation @r@ is the 'empty' relation.
-
--- Before 2010/11/09 null::Ord b =>  Relation a b -> Bool
+-- | 
+-- True if the relation @r@ is the 'empty' relation.
 null    ::  Relation a b -> Bool
 null r  =   M.null $ domain r  
+-- Before 2010/11/09 null::Ord b =>  Relation a b -> Bool
 
 
 
@@ -318,74 +335,78 @@ ran r          =   M.keysSet (range   r)
 
 
 
-{- |
- - A compact set of sets the values of which can be @Just (Set x)@ or @Nothing@.
- -
- - - The cases of 'Nothing' are purged.
- -
- - It is similar to 'concat'.
--}
-compactarSet ::  Ord a => S.Set (Maybe (S.Set a)) -> S.Set a
+-- |
+-- A compact set of sets the values of which can be @Just (Set x)@ or @Nothing@.
+--
+-- The cases of 'Nothing' are purged.
+--
+-- It is similar to 'concat'.
+compactSet ::  Ord a => S.Set (Maybe (S.Set a)) -> S.Set a
 
-compactarSet =   S.fold ( S.union . fromMaybe S.empty ) S.empty
-
+compactSet =   S.fold ( S.union . fromMaybe S.empty ) S.empty
 
 
-{- |
- - Primitive implementation for the /right selection/ and /left selection/ operators.
- -
- - PICA provides both operators:
- -        '|>'  and  '<|' 
- - and    '|$>' and '<$|'
- -
- - in this library, for working with Relations and OIS (Ordered, Inductive Sets?).
- -
- - PICA exposes the operators defined here, so as not to interfere with the abstraction
- - of the Relation type and because having access to Relation hidden components is a more
- - efficient implementation of the operation of restriction.
- -
- -
-    (a <$| b) r 
 
-      denotes: for every element     @b@ from the Set      @B@,
-               select an element @a@     from the Set @A@     ,
-                             if  @a@ 
-                  is related to      @b@
-                  in @r@
+-- $selectops
+--
+-- Primitive implementation for the /right selection/ and /left selection/ operators.
+--
+-- PICA provides both operators:
+--        '|>'  and  '<|' 
+-- and    '|$>' and '<$|'
+--
+-- in this library, for working with Relations and OIS (Ordered, Inductive Sets?).
+--
+-- PICA exposes the operators defined here, so as not to interfere with the abstraction
+-- of the Relation type and because having access to Relation hidden components is a more
+-- efficient implementation of the operation of restriction.
+--
+-- @
+--     (a <$| b) r 
+-- 
+--       denotes: for every element     @b@ from the Set      @B@,
+--                select an element @a@     from the Set @A@     ,
+--                              if  @a@ 
+--                   is related to      @b@
+--                   in @r@
+-- @
+--
+-- @
+--     (a |$> b) r
+-- 
+--       denotes: for every element @a@      from the Set @A@    ,
+--                select an element     @b@  from the Set     @B@,
+--                              if  @a@ 
+--                   is related to      @b@
+--                   in @r@
+-- @
+--
+-- With regard to domain restriction and range restriction operators
+-- of the language, those are described differently and return the domain or the range.
 
-    (a |$> b) r
-
-      denotes: for every element @a@      from the Set @A@    ,
-               select an element     @b@  from the Set     @B@,
-                             if  @a@ 
-                  is related to      @b@
-                  in @r@
-
-    With regard to domain restriction and range restriction operators
-    of the language, those are described differently and return the domain or the range.
--}
-
-
+-- | 
+-- @(Case b <| r a)@
+--
 (<$|)          ::  (Ord a, Ord b) 
                =>  S.Set a -> S.Set b -> Relation a b -> S.Set a
 
 (as <$| bs) r  =   as `S.intersection` generarAS bs
 
-    where  generarAS = compactarSet . S.map (`lookupRan` r) 
+    where  generarAS = compactSet . S.map (`lookupRan` r) 
    
     -- The subsets of the domain (a) associated with each @b@
     -- such that @b@ in @B@ and (b) are in the range of the relation.
     -- The expression 'S.map' returns a set of @Either (S.Set a)@.
 
 
--- ( Case a |> r b )
-
+-- | 
+-- @( Case a |> r b )@
 (|$>)          ::  (Ord a, Ord b) 
                =>  S.Set a -> S.Set b -> Relation a b -> S.Set b
 
 (as |$> bs) r  =   bs `S.intersection`  generarBS as
 
-    where  generarBS = compactarSet . S.map (`lookupDom` r) 
+    where  generarBS = compactSet . S.map (`lookupDom` r) 
 
 
 
@@ -415,17 +436,16 @@ r |> t =  fromList $ concatMap
     rr        =  range r   -- just to memoize the value
 
 
-{- Note:
- 
-   As you have seen this implementation is expensive in terms
-   of storage. Information is registered twice.
-   For the operators |> and <| we follow a pattern used in
-   the @fromList@ constructor and @toList@ flattener:
-   It is enough to know one half of the Relation (the domain or
-   the range) to create to other half.
-   
--}
+-- Note:
+--  
+--    As you have seen this implementation is expensive in terms
+--    of storage. Information is registered twice.
+--    For the operators |> and <| we follow a pattern used in
+--    the @fromList@ constructor and @toList@ flattener:
+--    It is enough to know one half of the Relation (the domain or
+--    the range) to create to other half.
+--    
+-- 
 
 
 
---eof
