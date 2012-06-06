@@ -23,13 +23,6 @@
 -- Since neither 'map' nor 'fold' are implemented, you /must/ convert
 -- the structure to a list to process sequentially.
 --
--- Changes:
---
--- @
--- \ 2012.06.06.  DD. Translated to English.
--- \ 2009.11.09. LFL. Corrected the definition of delete.
--- \ 2009.11.26. LFL. Construction
--- @
 --
 module Data.Relation (
 

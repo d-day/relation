@@ -17,7 +17,15 @@ description:
                     . 
                     An example of use is the include source file T02_Relation.hs.
                     .
-homepage:           https://www.github.com/technogeeky/relation/
+                    Changes:
+                    @
+                    \ 2012.06.06.  DD. Translated to English.
+                    \ 2009.11.09. LFL. Corrected the definition of delete.
+                    \ 2009.11.26. LFL. Construction
+                    @
+
+homepage:           https://www.github.com/d-day/relation/
+bug-reports:        https://www.github.com/d-day/relation/issues
 license:            BSD3
 license-file:       LICENSE
 author:             Drew Day
@@ -46,4 +54,7 @@ library
                     array          >= 0.4 && < 0.5,
                     containers     >= 0.4 && < 0.6
 
+source-repository head
+  type:     git
+  location: https://github.com/d-day/relation
 
