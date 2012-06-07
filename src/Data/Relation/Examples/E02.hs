@@ -1,15 +1,32 @@
--- | 
--- Drew Day. 2012/6/7.
---   Translated to English.
--- 
--- Leonel Fonseca. 2010/nov/14.
---   Test module showing how to use Data.Relation.
-
-module T02_Relation where 
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Data.Relation.Examples.E02
+-- Copyright   :  (c) DD.  2012
+--                (c) LFL. 2009
+-- License     :  BSD-style
+-- Maintainer  :  Drew Day<drewday@gmail.com>
+-- Stability   :  experimental
+-- Portability :  portable
+--
+module Data.Relation.Examples.E02 where 
 
 import           Data.Relation 
 import qualified Data.Set      as S
 import           Text.Groom
+
+
+-- | 
+--
+-- Documentation Tests
+--
+-- All examples in this module are tested automatically with Doctest, and pretty printed with "Text.Groom".
+-- 
+-- This output is provided as proof of the correctness of the REPL (@>>>@) text:
+--
+-- @
+--   There are 12 tests, with 12 total interactions.
+--   Examples: 12  Tried: 12  Errors: 0  Failures: 0
+-- @
 
 
 
