@@ -40,7 +40,8 @@ p f = putStrLn $ groom $ f
 --
 -- * Each class must have at least one student.
 
-enrollment =  fromList 
+e :: Relation [Char] [Char]
+e =  fromList 
          [ ("Rebeca" , "History"    )
          , ("Rebeca" , "Mathematics"  )
          , ("Rolando", "Religion"    )
@@ -51,7 +52,7 @@ enrollment =  fromList
          ]
 
 -- ^
--- >>> p enrollment
+-- >>> p e
 -- Relation{domain =
 --            fromList
 --              [("Antonio", fromList ["History"]),
@@ -69,20 +70,22 @@ enrollment =  fromList
 -------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------
 
-
-rebecaenrollment = (S.singleton "Rebeca" |$> ran enrollment) enrollment 
+rebecaE :: S.Set [Char]
+rebecaE = (S.singleton "Rebeca" |$> ran e) e 
 -- ^
--- >>> p rebecaenrollment
+-- >>> p rebecaE
 -- fromList ["History", "Mathematics"]
 
-takingreligion = (dom enrollment <$| S.singleton "Religion") enrollment
+takingreligion :: S.Set [Char]
+takingreligion = (dom e <$| S.singleton "Religion") e
 -- ^
 -- >>> p takingreligion
 -- fromList ["Rolando", "Teresa"]
 
 
 -- others courses for those taking religion
-others   =  (takingreligion |$> ran enrollment) enrollment
+others :: S.Set [Char]
+others   =  (takingreligion |$> ran e) e
 -- ^
 -- >>> p others
 -- fromList ["Architecture", "Comunication", "Religion"]
@@ -91,8 +94,8 @@ others   =  (takingreligion |$> ran enrollment) enrollment
 
 
 
-
-test1 =  (takingreligion <$| ran enrollment) enrollment == takingreligion
+test1 :: Bool
+test1 =  (takingreligion <$| ran e) e == takingreligion
 --
 -- ^
 -- >>> p test1
@@ -100,7 +103,8 @@ test1 =  (takingreligion <$| ran enrollment) enrollment == takingreligion
 
 -- Exploring |> 
 --
-takingreligion2 = enrollment |> S.singleton "Religion"
+takingreligion2 :: Relation [Char] [Char]
+takingreligion2 = e |> S.singleton "Religion"
 -- ^
 -- >>> p takingreligion2
 -- Relation{domain =
@@ -110,39 +114,64 @@ takingreligion2 = enrollment |> S.singleton "Religion"
 --          range = fromList [("Religion", fromList ["Rolando", "Teresa"])]}
 
 
+twoStudents = (<|) (S.union (S.singleton "Rolando") (S.singleton "Teresa")) e
+-- ^
+-- >>> p $ twoStudents
+-- Relation{domain =
+--            fromList
+--              [("Rolando", fromList ["Comunication", "Religion"]),
+--               ("Teresa", fromList ["Architecture", "Religion"])],
+--          range =
+--            fromList
+--              [("Architecture", fromList ["Teresa"]),
+--               ("Comunication", fromList ["Rolando"]),
+--               ("Religion", fromList ["Rolando", "Teresa"])]}
+
+-- ^
+-- >>> p $ (|$>) (S.union (S.singleton "Rolando") (S.singleton "Teresa")) (ran e) e
+-- fromList ["Architecture", "Comunication", "Religion"]
+
+takingreligion3 = 
+id1, id2, id3, id4 :: S.Set [Char] -> (Bool, S.Set [Char])
 id1 s =  ( v1 == v2, v1 )
     where
-    v1 =  (dom  enrollment |$> s) enrollment
-    v2 =   ran (enrollment |>  s)
+    v1 =  (dom  e |$> s) e
+    v2 =   ran (e |>  s)
    
 
 id2 s = ( v1 == v2, v1 )
     where
-    v1 =  (dom  enrollment <$| s) enrollment
-    v2 =   dom (enrollment |>  s) 
+    v1 =  (dom  e <$| s) e
+    v2 =   dom (e |>  s) 
 
 
 -- Exploring <|
 
 id3 s = ( v1 == v2, v1 )
     where
-    v1 =  (s       <$| ran enrollment) enrollment
-    v2 =  dom (s <|  enrollment)
+    v1 =  (s       <$| ran e) e
+    v2 =  dom (s <|  e)
 
 
 id4 s = ( v1 == v2, v2 )
     where
-    v1 =  (s       |$> ran enrollment) enrollment
-    v2 =  ran (s <|  enrollment)
+    v1 =  (s       |$> ran e) e
+    v2 =  ran (s <|  e)
 
 
+religion  :: S.Set [Char]
 religion  = S.singleton "Religion"  -- has students
+
+teresa    :: S.Set [Char]
 teresa    = S.singleton "Teresa" -- enrolled
 
 --
 -- ^
 -- >>> p religion
 -- fromList ["Religion"]
+
+
+t11, t12, t13, t14 :: (Bool, S.Set [Char])
 
 t11 = id1 religion 
 --
@@ -181,10 +210,11 @@ id2R s r = (dom r <$| s) r == dom (r |>  s)
 id3R s r = (s <$| ran r) r == dom (s <| r)
 id4R s r = (s |$> ran r) r == ran (s <| r)
 
-testAll     = all id  [ id1R religion enrollment
-                      , id2R religion enrollment
-                      , id3R teresa   enrollment
-                      , id4R teresa   enrollment
+testAll :: Bool
+testAll     = all id  [ id1R religion e
+                      , id2R religion e
+                      , id3R teresa   e
+                      , id4R teresa   e
                       ]
 -- ^
 -- >>> p testAll
