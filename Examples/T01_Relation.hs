@@ -20,7 +20,7 @@ r01 = R.fromList x1      -- construye a partir de una lista.
 r02 = R.empty            -- construye una relación vacía.
 r03 = R.singleton 2 "c"  -- construye una relación unitaria.
 r04 = R.singleton 3 "i"
-r05 = R.insert 3 "i" r03
+r05 = R.insert    3 "i" r03
 
 t01 r = putStrLn $
            "size = " ++ (show $ R.size r)

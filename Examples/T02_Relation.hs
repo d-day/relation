@@ -1,90 +1,175 @@
--- | Leonel Fonseca. 2010/nov/14.
+-- | 
+-- Drew Day. 2012/6/7.
+--   Translated to English.
+-- 
+-- Leonel Fonseca. 2010/nov/14.
 --   Test module showing how to use Data.Relation.
 
 module T02_Relation where 
 
 import           Data.Relation 
 import qualified Data.Set      as S
+import           Text.Groom
 
--- | Para estar en la relación lleva
---  - Un estudiante lleva al menos una materia.
---  - Una materia al menos es llevada por un estudiante.
 
-lleva =  fromList 
-         [ ("Rebeca" , "Historia"    )
-         , ("Rebeca" , "Matemática"  )
-         , ("Rolando", "Religión"    )
-         , ("Rolando", "Comunicación")
-         , ("Teresa" , "Religión"    )
-         , ("Teresa" , "Arquitectura")
-         , ("Antonio", "Historia"    )
+
+p f = putStrLn $ groom $ f
+
+-- | Example 2:
+--
+-- A student x can take n classes.
+--
+-- * Each student must take at least 1 class
+--
+-- * Each class must have at least one student.
+
+enrollment =  fromList 
+         [ ("Rebeca" , "History"    )
+         , ("Rebeca" , "Mathematics"  )
+         , ("Rolando", "Religion"    )
+         , ("Rolando", "Comunication")
+         , ("Teresa" , "Religion"    )
+         , ("Teresa" , "Architecture")
+         , ("Antonio", "History"    )
          ]
 
-rebecaLleva = (S.singleton "Rebeca" |$> ran lleva) lleva 
+-- ^
+-- >>> p enrollment
+-- Relation{domain =
+--            fromList
+--              [("Antonio", fromList ["History"]),
+--               ("Rebeca", fromList ["History", "Mathematics"]),
+--               ("Rolando", fromList ["Comunication", "Religion"]),
+--               ("Teresa", fromList ["Architecture", "Religion"])],
+--          range =
+--            fromList
+--              [("Architecture", fromList ["Teresa"]),
+--               ("Comunication", fromList ["Rolando"]),
+--               ("History", fromList ["Antonio", "Rebeca"]),
+--               ("Mathematics", fromList ["Rebeca"]),
+--               ("Religion", fromList ["Rolando", "Teresa"])]}
 
-llevanReligión = (dom lleva <$| S.singleton "Religión") lleva
+-------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------
 
--- otros cursos para aquellos que llevan Religión
-otros   =  (llevanReligión |$> ran lleva) lleva
 
-prueba1 =  (llevanReligión <$| ran lleva) lleva == llevanReligión
+rebecaenrollment = (S.singleton "Rebeca" |$> ran enrollment) enrollment 
+-- ^
+-- >>> p rebecaenrollment
+-- fromList ["History", "Mathematics"]
 
--- Explorando |> 
+takingreligion = (dom enrollment <$| S.singleton "Religion") enrollment
+-- ^
+-- >>> p takingreligion
+-- fromList ["Rolando", "Teresa"]
 
-llevanReligión2 = lleva |> S.singleton "Religión"
 
-identidad1 s =  ( v1 == v2, v1 )
+-- others courses for those taking religion
+others   =  (takingreligion |$> ran enrollment) enrollment
+-- ^
+-- >>> p others
+-- fromList ["Architecture", "Comunication", "Religion"]
+--
+
+
+
+
+
+test1 =  (takingreligion <$| ran enrollment) enrollment == takingreligion
+--
+-- ^
+-- >>> p test1
+-- True
+
+-- Exploring |> 
+--
+takingreligion2 = enrollment |> S.singleton "Religion"
+-- ^
+-- >>> p takingreligion2
+-- Relation{domain =
+--            fromList
+--              [("Rolando", fromList ["Religion"]),
+--               ("Teresa", fromList ["Religion"])],
+--          range = fromList [("Religion", fromList ["Rolando", "Teresa"])]}
+
+
+id1 s =  ( v1 == v2, v1 )
     where
-    v1 =  (dom  lleva |$> s) lleva
-    v2 =   ran (lleva |>  s)
+    v1 =  (dom  enrollment |$> s) enrollment
+    v2 =   ran (enrollment |>  s)
    
 
-identidad2 s = ( v1 == v2, v1 )
+id2 s = ( v1 == v2, v1 )
     where
-    v1 =  (dom  lleva <$| s) lleva
-    v2 =   dom (lleva |>  s) 
+    v1 =  (dom  enrollment <$| s) enrollment
+    v2 =   dom (enrollment |>  s) 
 
 
--- Explorando <|
+-- Exploring <|
 
-identidad3 s = ( v1 == v2, v1 )
+id3 s = ( v1 == v2, v1 )
     where
-    v1 =  (s       <$| ran lleva) lleva
-    v2 =  dom (s <|  lleva)
+    v1 =  (s       <$| ran enrollment) enrollment
+    v2 =  dom (s <|  enrollment)
 
 
-identidad4 s = ( v1 == v2, v2 )
+id4 s = ( v1 == v2, v2 )
     where
-    v1 =  (s       |$> ran lleva) lleva
-    v2 =  ran (s <|  lleva)
+    v1 =  (s       |$> ran enrollment) enrollment
+    v2 =  ran (s <|  enrollment)
 
 
-religión = S.singleton "Religión"
+religion  = S.singleton "Religion"  -- has students
+teresa    = S.singleton "Teresa" -- enrolled
 
-t11 = identidad1 religión 
+--
+-- ^
+-- >>> p religion
+-- fromList ["Religion"]
 
-t12 = identidad2 religión 
+t11 = id1 religion 
+--
+-- ^
+-- >>> p t11
+-- (True, fromList ["Religion"])
 
-teresa = S.singleton "Teresa"
+t12 = id2 religion 
+--
+-- ^
+-- >>> p t12
+-- (True, fromList ["Rolando", "Teresa"])
 
-t13 = identidad3 teresa 
 
-t14 = identidad4 teresa 
+t13 = id3 teresa 
+--
+-- ^
+-- >>> p t13
+-- (True, fromList ["Teresa"])
+
+t14 = id4 teresa 
+--
+-- ^
+-- >>> p t14
+-- (True, fromList ["Architecture", "Religion"])
 
 
-identidad1R, identidad2R 
- :: (Ord a, Ord b) => S.Set b -> Relación a b -> Bool
+id1R, id2R 
+ :: (Ord a, Ord b) => S.Set b -> Relation a b -> Bool
 
-identidad3R , identidad4R
- :: (Ord a, Ord b) => S.Set a -> Relación a b -> Bool
+id3R , id4R
+ :: (Ord a, Ord b) => S.Set a -> Relation a b -> Bool
 
-identidad1R s r = (dom r |$> s) r == ran (r |>  s)
-identidad2R s r = (dom r <$| s) r == dom (r |>  s) 
-identidad3R s r = (s <$| ran r) r == dom (s <| r)
-identidad4R s r = (s |$> ran r) r == ran (s <| r)
+id1R s r = (dom r |$> s) r == ran (r |>  s)
+id2R s r = (dom r <$| s) r == dom (r |>  s) 
+id3R s r = (s <$| ran r) r == dom (s <| r)
+id4R s r = (s |$> ran r) r == ran (s <| r)
 
-probarTodas = all id  [ identidad1R religión lleva
-                      , identidad2R religión lleva
-                      , identidad3R teresa   lleva
-                      , identidad4R teresa   lleva
+testAll     = all id  [ id1R religion enrollment
+                      , id2R religion enrollment
+                      , id3R teresa   enrollment
+                      , id4R teresa   enrollment
                       ]
+-- ^
+-- >>> p testAll
+-- True
+
