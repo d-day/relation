@@ -42,13 +42,13 @@ p f = putStrLn $ groom $ f
 
 e :: Relation [Char] [Char]
 e =  fromList 
-         [ ("Rebeca" , "History"    )
-         , ("Rebeca" , "Mathematics"  )
-         , ("Rolando", "Religion"    )
-         , ("Rolando", "Comunication")
-         , ("Teresa" , "Religion"    )
-         , ("Teresa" , "Architecture")
-         , ("Antonio", "History"    )
+         [ ("Rebeca" , "History"        )
+         , ("Rebeca" , "Mathematics"    )
+         , ("Rolando", "Religion"       )
+         , ("Rolando", "Comunication"   )
+         , ("Teresa" , "Religion"       )
+         , ("Teresa" , "Architecture"   )
+         , ("Antonio", "History"        )
          ]
 
 -- ^
@@ -133,6 +133,8 @@ twoStudents = (<|) (S.union (S.singleton "Rolando") (S.singleton "Teresa")) e
 
 takingreligion3 = 
 id1, id2, id3, id4 :: S.Set [Char] -> (Bool, S.Set [Char])
+
+
 id1 s =  ( v1 == v2, v1 )
     where
     v1 =  (dom  e |$> s) e
