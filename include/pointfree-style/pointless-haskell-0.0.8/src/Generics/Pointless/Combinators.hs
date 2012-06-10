@@ -39,8 +39,13 @@ instance Show (Ann a) where
 _L :: a
 _L = undefined
 
+_LCR :: a -> a -> a
+_LCR = undefined . undefined . undefined
+
 -- | The final object.
 -- The only possible value of type 'One' is '_L'.
+
+-- {{{ 
 data One deriving G.Typeable
 
 instance Show One where
@@ -48,6 +53,24 @@ instance Show One where
 
 instance Eq One where
     (==) _ _ = True
+-- }}}
+
+-- should have the same structure as the generators for S3
+data III d r = DCR
+             | D
+             |  C
+             |   R 
+         deriving G.Typeable
+
+
+{-
+instance Show III where
+     show _ _ _   = "_III_"
+     show One _ _ = "_RII_"
+     show _ One _ = "_IGI_"
+     show _ _ One = "_IIB_"
+-}
+
 
 -- * Points
 
