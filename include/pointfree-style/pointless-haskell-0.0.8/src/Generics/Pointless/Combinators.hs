@@ -46,12 +46,12 @@ _LCR = undefined . undefined . undefined
 -- The only possible value of type 'One' is '_L'.
 
 -- {{{ 
-data One deriving G.Typeable
+data I deriving G.Typeable
 
-instance Show One where
-    show _ = "_L"
+instance Show I where
+    show _ = "_I_"
 
-instance Eq One where
+instance Eq I where
     (==) _ _ = True
 -- }}}
 
@@ -75,11 +75,11 @@ instance Show III where
 -- * Points
 
 -- | Creates a point to the terminal object.
-bang :: a -> One
+bang :: a -> I
 bang = const _L
 
 -- | Converts elements into points.
-pnt :: a -> One -> a
+pnt :: a -> I -> a
 pnt = const
 
 -- * Products
@@ -88,6 +88,9 @@ infix 6  /\
 -- | The infix split combinator.
 (/\) :: (a -> b) -> (a -> c) -> a -> (b,c)
 (/\) f g x = (f x, g x)
+
+(/\/\) f c g x = (f x, (c x, c x, c x), g x)
+
 
 infix 7  ><
 -- The infix product combinator.
@@ -119,19 +122,50 @@ infix 5 <>
 (<>) :: (a -> b) -> (c -> d) -> Either a c -> Either b d
 (<>) = (-|-)
 
+
+curry1   :: ((a) -> b)        -> a -> b                     -- or b -> a
+curry2   :: ((a,b) -> c)      -> a -> b -> c                
+curry3   :: ((a,b,c) -> d)    -> a -> b -> c -> d
+curry4   :: ((a,b,c,d) -> e)  -> a -> b -> c -> d -> e
+curry5   :: ((a,b,c,d,e) -> f)-> a -> b -> c -> d -> e -> f
+
+
+uncurry1 :: (a -> b)                     -> (a)     -> b
+uncurry2 :: (a -> b -> c)                -> (a,b)   -> c
+uncurry3 :: (a -> b -> c -> d)           -> (a,b,c) -> d
+uncurry4 :: (a -> b -> c -> d -> e)      -> (a,b,c,d)   -> e
+uncurry5 :: (a -> b -> c -> d -> e -> f) -> (a,b,c,d,e) -> f
+
+curry1 f x          = f (x)
+curry2 f x y        = f (x,y)
+curry3 f x y z      = f (x,y,z)
+curry4 f x y z a    = f (x,y,z,a)
+curry5 f x y z a b  = f (x,y,z,a,b)
+
+uncurry1 f (x) = f x
+uncurry2 f (x,y) = f x y
+uncurry3 f (x,y,z) = f x y z
+uncurry4 f (x,y,z,a) = f x y z a
+uncurry5 f (x,y,z,a,b) = f x y z a b
+
+
 -- * Exponentials
 
 -- | The application combinator.
 app :: (a -> b,a) -> b
 app (f,x) = f x
 
+app2 :: (a, a -> b) -> b
+app2 (x,f) = f x
+
 -- | The left exponentiation combinator.
 lexp :: (a -> b) -> (b -> c) -> (a -> c)
-lexp f = curry (app . (id >< f))
+lexp f = curry2 (app . (id >< f))
 
 -- | The right exponentiation combinator.
 rexp :: (b -> c) -> (a -> b) -> (a -> c)
-rexp f = curry (f . app)
+rexp f = curry2 (f . app)
+
 
 infix 0 !
 -- | The infix combinator for a constant point.
@@ -149,41 +183,60 @@ grd p x = if p x then inl x else inr x
 (?) = grd
 
 infix 1 ??
-(??) :: (a -> Either One One) -> a -> Either a a
+(??) :: (a -> Either I I) -> a -> Either a a
 (??) p = (snd -|- snd) . distl . (p /\ id)
 -- * Point-free definitions of uncurried versions of the basic combinators
 
+
 -- | The uncurried split combinator.
 split :: (a -> b, a -> c) -> (a -> (b,c))
-split = curry ((app >< app) . ((fst >< id) /\ (snd >< id)))
+split = curry2 (app_X_app . (fst_X_idf /\ snd_X_idf))
+
+app_X_app = app >< app
+
+idf_X_app = id  >< app
+
+
+fst_X_idf = fst >< id
+idf_X_fst = id  >< fst
+snd_X_idf = snd >< id
+idf_X_snd = id  >< snd
+
+
+app_V_app = app \/ app
+fst_V_idf = fst \/ id
+idf_V_fst = id  \/ fst
+snd_V_idf = snd \/ id
+idf_V_snd = id  \/ snd
+
 
 -- | The uncurried either combinator.
 eithr :: (a -> c, b -> c) -> Either a b -> c
-eithr = curry ((app \/ app) . (fst >< id -|- snd >< id) . distr)
+eithr = curry2 (app_V_app . (fst_X_idf -|- snd_X_idf) . distr)
 
 -- | The uncurried composition combinator.
 comp :: (b -> c, a -> b) -> (a -> c)
-comp = curry (app . (id >< app) . assocr)
+comp = curry2 (app . idf_X_app . assocr)
 
 -- | Binary @or@ of boolean functions.
 orf :: (a -> Bool,a -> Bool) -> (a -> Bool)
-orf = curry (or . (app . (fst >< id) /\ app . (snd >< id)))
+orf = curry2 (or . (app . fst_X_idf /\ app . snd_X_idf))
 
 -- | Binary @and@ of boolean functions.
 andf :: (a -> Bool,a -> Bool) -> (a -> Bool)
-andf = curry (and . (app . (fst >< id) /\ app . (snd >< id)))
+andf = curry2 (and . (app . fst_X_idf /\ app . snd_X_idf))
 
 -- | Binary @or@ point-free combinator.
 or :: (Bool,Bool) -> Bool
-or = uncurry (||)
+or = uncurry2 (||)
 
 -- | Binary @and@ point-free combinator.
 and :: (Bool,Bool) -> Bool
-and = uncurry (&&)
+and = uncurry2 (&&)
 
 -- | Binary equality point-free combinator.
 eq :: Eq a => (a,a) -> Bool
-eq = uncurry (==)
+eq = uncurry2 (==)
 
 -- | Binary inequality point-free combinator.
 neq :: Eq a => (a,a) -> Bool
@@ -201,7 +254,7 @@ coswap = inr \/ inl
 
 -- | Distribute products over the left of sums.
 distl :: (Either a b,c) -> Either (a,c) (b,c)
-distl = app . ((curry inl \/ curry inr) >< id)
+distl = app . ((curry2 inl \/ curry2 inr) >< id)
 
 -- | Distribute sums over the left of products.
 undistl :: Either (a,c) (b,c) -> (Either a b, c)
@@ -217,11 +270,11 @@ undistr = (id >< inl) \/ (id >< inr)
 
 -- | Associate nested products to the left.
 assocl :: (a,(b,c)) -> ((a,b),c)
-assocl = (id >< fst) /\ snd . snd
+assocl = idf_X_fst /\ snd . snd
 
 -- | Associates nested products to the right.
 assocr :: ((a,b),c) -> (a,(b,c))
-assocr = fst . fst  /\  (snd >< id)
+assocr = fst . fst  /\  snd_X_idf
 
 -- | Associates nested sums to the left.
 coassocl :: Either a (Either b c) -> Either (Either a b) c
@@ -243,14 +296,33 @@ subl = assocl . (id >< swap) . assocr
 cosubr :: Either a (Either b c) -> Either b (Either a c)
 cosubr = coassocr . (coswap -|- id) . coassocl
 
+
 -- | Shifts an option to the left of a nested sum.
 cosubl :: Either (Either a b) c -> Either (Either a c) b
 cosubl = coassocl . (id -|- coswap) . coassocr
 
+
+cosubrA :: Either a (Either b (Either c d)) -> Either a (Either b (Either d c))
+cosublA :: Either (Either (Either a d) b) c -> Either (Either (Either d a) b) c
+
+cosubrA = coassocr . (id -|- coswap) . coassocl
+cosublA = coassocl . (coswap -|- id) . coassocr
+
+
 -- | The product distribution combinator
 distp :: ((c,d),(a,b)) -> ((c,a),(d,b))
-distp = fst >< fst /\ snd >< snd
+distp = fst_X_fst /\ snd_X_snd
+
+fst_X_fst = fst >< fst
+snd_X_snd = snd >< snd
+
+
 
 -- | The sum distribution combinator.
-dists :: (Either a b,Either c d) -> Either (Either (a,c) (a,d)) (Either (b,c) (b,d))
-dists = (distr -|- distr) . distl
+dists ::       (Either a b,Either c d) -> Either (Either (a,c) (a,d)) (Either (b,c) (b,d))
+distsAlt ::    (Either a b,Either c d) -> Either (Either (a,c) (b,c)) (Either (a,d) (b,d))
+
+dists     = (distr -|- distr) . distl
+distsAlt  = (distl -|- distl) . distr
+
+
