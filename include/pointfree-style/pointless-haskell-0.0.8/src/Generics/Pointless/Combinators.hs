@@ -155,8 +155,8 @@ uncurry5 f (x,y,z,a,b) = f x y z a b
 app :: (a -> b,a) -> b
 app (f,x) = f x
 
-app2 :: (a, a -> b) -> b
-app2 (x,f) = f x
+apI :: (a, a -> b) -> b
+apI (x,f) = f x
 
 -- | The left exponentiation combinator.
 lexp :: (a -> b) -> (b -> c) -> (a -> c)
@@ -192,23 +192,106 @@ infix 1 ??
 split :: (a -> b, a -> c) -> (a -> (b,c))
 split = curry2 (app_X_app . (fst_X_idf /\ snd_X_idf))
 
+idf_X_app :: (     d       , (a  -> r,a ) ) -> (d, r)  -- djinn: f (a      , (b, c)) = (a  , b c)
+app_X_idf :: ( (a -> d, a) ,        r     ) -> (d, r)  -- djinn: f ((a, b) , c     ) = (a b, c)
+fst_X_idf :: (   (d,g1)    ,        r     ) -> (d, r)  -- djinn: f ((a, _) , b     ) = (a  , b)
+idf_X_fst :: (     d       ,     (r, g1)  ) -> (d, r)  -- djinn: f (a      , (b, _)) = (a  , b)
+snd_X_idf :: (   (a,d)     ,        r     ) -> (d, r)  -- djinn: f ((_, a) , b     ) = (a  , b)
+idf_X_snd :: (     d       ,     (a, r)   ) -> (d, r)  -- djinn: f (a      , (_, b)) = (a  , b)
+
+app_X_app :: ( (a -> d, a) , (a' -> r,a') ) -> (d, r)  -- djinn: f ((a, b) , (c, d)) = (a b, c d)
+apI_X_apI :: ( (a, a -> d) , (a', a' -> r)) -> (d, r)  -- djinn: f ((a, b) , (c, d)) = (b a, d c)
+
+idf_X_apI :: (     d       , (a,   a -> r)) -> (d, r)  -- djinn: f (a      , (b, c)) = (a  , c b)
+apI_X_idf :: ( (a, a -> d) ,       r      ) -> (d, r)  -- djinn: f ((a, b) , c     ) = (b a, c)
+
+
+
+apI_X_apI = apI >< apI
+idf_X_apI = id  >< apI
+apI_X_idf = apI >< id
+
+
 app_X_app = app >< app
-
 idf_X_app = id  >< app
-
+app_X_idf = app >< id
 
 fst_X_idf = fst >< id
 idf_X_fst = id  >< fst
+
+
 snd_X_idf = snd >< id
 idf_X_snd = id  >< snd
 
+-- apI \/ app :: Either (a1, a1 -> a) (a2 -> a, a2) -> a
+-- djinn:
+     --  f a =
+     --      case a of
+     --      Left (b, c) -> c b
+     --      Right (d, e) -> d e
 
+-- app \/ apI :: Either (a1 -> a, a1) (a2, a2 -> a) -> a
+     -- djinn:
+     --  f a =
+     --      case a of
+     --      Left (b, c) -> b c
+     --      Right (d, e) -> e d
+
+apI_V_apI :: Either (a1, a1 -> a) (a2, a2 -> a)   -> a
+-- djinn:
+--  f a =
+--      case a of
+--      Left (b, c) -> c b
+--      Right (d, e) -> e d
+
+app_V_app :: Either (a1 -> a, a1) (a2 -> a, a2)   -> a
+-- djinn:
+--  f a =
+--      case a of
+--      Left (b, c) -> b c
+--      Right (d, e) -> d e
+
+fst_V_idf :: Either     (a,b)            a        -> a
+-- djinn:
+--  f a =
+--      case a of
+--      Left (b, _) -> b
+--      Right c -> c
+
+
+idf_V_fst :: Either      a             (a, b)     -> a
+-- djinn:
+--  f a =
+--      case a of
+--      Left b -> b
+--      Right (c, _) -> c
+
+snd_V_idf :: Either   (a1 , a)           a        -> a
+-- djinn:
+--  f a =
+--      case a of
+--      Left (_, b) -> b
+--      Right c -> c
+
+idf_V_snd :: Either      a             (a1,a)     -> a
+-- djinn:
+--  f a =
+--      case a of
+--      Left b -> b
+--      Right (_, c) -> c
+
+
+-- opposite
+apI_V_apI = apI \/ apI
+-- App V App
 app_V_app = app \/ app
 fst_V_idf = fst \/ id
 idf_V_fst = id  \/ fst
 snd_V_idf = snd \/ id
 idf_V_snd = id  \/ snd
 
+-- (0,c,r,c,d,c,0)
+-- (0,c,d,c,r,c,0)
 
 -- | The uncurried either combinator.
 eithr :: (a -> c, b -> c) -> Either a b -> c

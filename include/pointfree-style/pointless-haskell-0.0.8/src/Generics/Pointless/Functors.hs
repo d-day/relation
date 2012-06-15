@@ -310,10 +310,10 @@ instance Mu (a :@!: b) where
 type instance PF [a] = Const One :+: Const a :*: Id
 
 instance Mu [a] where
-    inn (Left _) = []
-    inn (Right (x,xs)) = x:xs
-    out [] = Left _L
-    out (x:xs) = Right (x,xs)
+    inn (Left _)         = []
+    inn (Right (x,xs))   = x:xs
+    out []               = Left _L
+    out (x:xs)           = Right (x,xs)
 
 nil :: One -> [a]
 nil = inn . inl
@@ -380,10 +380,10 @@ false = inn . inr
 type instance PF (Maybe a) = Const One :+: Const a
 
 instance Mu (Maybe a) where
-    inn (Left _) = Nothing
-    inn (Right x) = Just x
-    out Nothing = Left _L
-    out (Just x) = Right x
+    inn (Left _)    = Nothing
+    inn (Right x)   = Just x
+    out Nothing     = Left _L
+    out (Just x)    = Right x
 
 maybe2bool :: Maybe a -> Bool
 maybe2bool = inn . (id -|- bang) . out
