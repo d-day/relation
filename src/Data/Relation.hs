@@ -66,6 +66,9 @@ module Data.Relation (
    --  Extract the elements of the domain to a Set.
  , ran
 
+  -- ** Invertible Relations
+ , c
+
    -- ** Utilities
 
  , compactSet --  Compact a Set of Maybe's.
@@ -116,6 +119,8 @@ data Relation a b  = Relation { domain ::  M.Map a (S.Set b)
 
     deriving (Show, Eq, Ord)
     
+
+
 
 -- * Functions about relations
 
@@ -327,6 +332,16 @@ ran            ::  Relation a b -> S.Set b
 ran r          =   M.keysSet (range   r)
 
 
+-- | Returns the converse of the relation.
+c :: Relation a b -> Relation b a
+
+c r = Relation {
+                    domain = range'
+                    ,range  = domain'
+               }
+     where
+           range' = range r
+           domain' = domain r
 
 -- |
 -- A compact set of sets the values of which can be @Just (Set x)@ or @Nothing@.

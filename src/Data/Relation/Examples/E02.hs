@@ -131,7 +131,6 @@ twoStudents = (<|) (S.union (S.singleton "Rolando") (S.singleton "Teresa")) e
 -- >>> p $ (|$>) (S.union (S.singleton "Rolando") (S.singleton "Teresa")) (ran e) e
 -- fromList ["Architecture", "Comunication", "Religion"]
 
-takingreligion3 = 
 id1, id2, id3, id4 :: S.Set [Char] -> (Bool, S.Set [Char])
 
 

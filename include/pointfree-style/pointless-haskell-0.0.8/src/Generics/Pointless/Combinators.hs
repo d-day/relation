@@ -1,4 +1,4 @@
-
+{-# LANGUAGE DeriveDataTypeable #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Generics.Pointless.Combinators
@@ -61,7 +61,6 @@ data III d r = DCR
              |  C
              |   R 
          deriving G.Typeable
-
 
 {-
 instance Show III where
