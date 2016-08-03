@@ -47,6 +47,7 @@ module Data.Relation (
 
  , union        --  Union of two relations.
  , unions       --  Union on a list of relations.
+ , intersection --  Intersection of two relations.
  , insert       --  Insert a tuple to the relation.
  , delete       --  Delete a tuple from the relation.
    -- The Set of values associated with a value in the domain.
@@ -90,6 +91,8 @@ module Data.Relation (
 where
 
 import           Prelude           hiding (null)
+import           Control.Monad     (MonadPlus, guard)
+import           Data.Functor      (Functor((<$)))
 import qualified Data.Map     as M
 import qualified Data.Set     as S
 import           Data.Maybe        (isJust, fromJust, fromMaybe)
@@ -214,6 +217,33 @@ unions       ::  (Ord a, Ord b) => [Relation a b] -> Relation a b
 
 unions       =   foldlStrict union empty
 
+
+
+-- | Intersection of two relations: @a@ and @b@ are related by @intersection r
+-- s@ exactly when @a@ and @b@ are related by @r@ and @s@.
+
+intersection ::  (Ord a, Ord b)
+             =>  Relation a b -> Relation a b -> Relation a b
+
+intersection r s = Relation
+  { domain = doubleIntersect (domain r) (domain s)
+  , range  = doubleIntersect (range  r) (range  s)
+  }
+
+
+ensure :: MonadPlus m => (a -> Bool) -> a -> m a
+ensure p x = x <$ guard (p x)
+
+-- This function is like M.intersectionWith S.intersection except that it
+-- also removes keys that would then be associated with empty sets.
+doubleIntersect :: (Ord k, Ord v)
+                => M.Map k (S.Set v)
+                -> M.Map k (S.Set v)
+                -> M.Map k (S.Set v)
+doubleIntersect = M.mergeWithKey
+  (\_ l r -> ensure (not . S.null) (S.intersection l r))
+  (const M.empty)
+  (const M.empty)
 
 
 -- | Insert a relation @ x @ and @ y @ in the relation @ r @
