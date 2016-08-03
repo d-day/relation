@@ -299,29 +299,31 @@ delete x y r  =  r { domain = domain', range = range' }
   
 -- | The Set of values associated with a value in the domain.
 
-lookupDom     ::  Ord a =>  a -> Relation a b -> Maybe (S.Set b)
-lookupDom x r =   M.lookup  x  (domain r)
+lookupDom     ::  Ord a =>  a -> Relation a b -> S.Set b
+lookupDom x r =   fromMaybe S.empty
+              $   M.lookup  x  (domain r)
 
 
 
 -- | The Set of values associated with a value in the range.
 
-lookupRan     ::  Ord b =>  b -> Relation a b -> Maybe (S.Set a)
-lookupRan y r =   M.lookup  y  (range   r)
+lookupRan     ::  Ord b =>  b -> Relation a b -> S.Set a
+lookupRan y r =   fromMaybe S.empty
+              $   M.lookup  y  (range   r)
 
 
 
 -- | True if the element @ x @ exists in the domain of @ r @.
 
 memberDom     ::  Ord a =>  a -> Relation a b -> Bool
-memberDom x r =   isJust $ lookupDom x r
+memberDom x r =   not . S.null $ lookupDom x r
 
 
 
 -- | True if the element exists in the range.
 
 memberRan     ::  Ord b =>  b -> Relation a b -> Bool
-memberRan y r =   isJust $ lookupRan y r
+memberRan y r =   not . S.null $ lookupRan y r
 
 
 
@@ -336,9 +338,7 @@ null r  =   M.null $ domain r
 -- | True if the relation contains the association @x@ and @y@
 
 member       ::  (Ord a, Ord b) =>  a -> b -> Relation a b -> Bool
-member x y r =   case lookupDom x r of
-                      Just s  ->  S.member y s
-                      Nothing ->  False
+member x y r =   S.member y (lookupDom x r)
     
 
 
@@ -379,9 +379,9 @@ c r = Relation {
 -- The cases of 'Nothing' are purged.
 --
 -- It is similar to 'concat'.
-compactSet ::  Ord a => S.Set (Maybe (S.Set a)) -> S.Set a
+compactSet ::  Ord a => S.Set (S.Set a) -> S.Set a
 
-compactSet =   S.fold ( S.union . fromMaybe S.empty ) S.empty
+compactSet =   S.foldr S.union S.empty
 
 
 
