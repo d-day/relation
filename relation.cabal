@@ -1,5 +1,5 @@
 name:               relation
-version:            0.2.1
+version:            0.3
 synopsis:           A data structure representing Relations on Sets.
 description:
                     A library to model relationships between two objects that are subclasses of
