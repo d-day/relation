@@ -1,5 +1,5 @@
 name:               relation
-version:            0.2.1
+version:            0.3
 synopsis:           A data structure representing Relations on Sets.
 description:
                     A library to model relationships between two objects that are subclasses of
@@ -51,16 +51,22 @@ extra-source-files:
                     src/Data/Relation/Examples/E02.hs
                     Examples/T01_Relation.hs
 
+flag examples
+  description: Include a collection of examples in the documentation
+  default: True
 
 library
   hs-source-dirs :  src
-  exposed-modules:  Data.Relation,
-                    Data.Relation.Examples.E02
+  exposed-modules:  Data.Relation
 
   build-depends  :  base           >= 4.2    && < 6.0,
+                    containers     >= 0.5    && < 0.6
+
+  if flag(examples)
+    exposed-modules:
+                    Data.Relation.Examples.E02
+    build-depends  :
                     array          >= 0.4    && < 0.5,
-                    containers     >= 0.5    && < 0.6,
---                  doctest        >= 0.7.0  && < 0.8,
                     groom          >= 0.1.1  && < 0.2
 
 

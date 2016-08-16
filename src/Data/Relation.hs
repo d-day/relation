@@ -47,6 +47,7 @@ module Data.Relation (
 
  , union        --  Union of two relations.
  , unions       --  Union on a list of relations.
+ , intersection --  Intersection of two relations.
  , insert       --  Insert a tuple to the relation.
  , delete       --  Delete a tuple from the relation.
    -- The Set of values associated with a value in the domain.
@@ -90,6 +91,8 @@ module Data.Relation (
 where
 
 import           Prelude           hiding (null)
+import           Control.Monad     (MonadPlus, guard)
+import           Data.Functor      (Functor((<$)))
 import qualified Data.Map     as M
 import qualified Data.Set     as S
 import           Data.Maybe        (isJust, fromJust, fromMaybe)
@@ -216,6 +219,33 @@ unions       =   foldlStrict union empty
 
 
 
+-- | Intersection of two relations: @a@ and @b@ are related by @intersection r
+-- s@ exactly when @a@ and @b@ are related by @r@ and @s@.
+
+intersection ::  (Ord a, Ord b)
+             =>  Relation a b -> Relation a b -> Relation a b
+
+intersection r s = Relation
+  { domain = doubleIntersect (domain r) (domain s)
+  , range  = doubleIntersect (range  r) (range  s)
+  }
+
+
+ensure :: MonadPlus m => (a -> Bool) -> a -> m a
+ensure p x = x <$ guard (p x)
+
+-- This function is like M.intersectionWith S.intersection except that it
+-- also removes keys that would then be associated with empty sets.
+doubleIntersect :: (Ord k, Ord v)
+                => M.Map k (S.Set v)
+                -> M.Map k (S.Set v)
+                -> M.Map k (S.Set v)
+doubleIntersect = M.mergeWithKey
+  (\_ l r -> ensure (not . S.null) (S.intersection l r))
+  (const M.empty)
+  (const M.empty)
+
+
 -- | Insert a relation @ x @ and @ y @ in the relation @ r @
 
 insert       ::  (Ord a, Ord b) 
@@ -269,29 +299,31 @@ delete x y r  =  r { domain = domain', range = range' }
   
 -- | The Set of values associated with a value in the domain.
 
-lookupDom     ::  Ord a =>  a -> Relation a b -> Maybe (S.Set b)
-lookupDom x r =   M.lookup  x  (domain r)
+lookupDom     ::  Ord a =>  a -> Relation a b -> S.Set b
+lookupDom x r =   fromMaybe S.empty
+              $   M.lookup  x  (domain r)
 
 
 
 -- | The Set of values associated with a value in the range.
 
-lookupRan     ::  Ord b =>  b -> Relation a b -> Maybe (S.Set a)
-lookupRan y r =   M.lookup  y  (range   r)
+lookupRan     ::  Ord b =>  b -> Relation a b -> S.Set a
+lookupRan y r =   fromMaybe S.empty
+              $   M.lookup  y  (range   r)
 
 
 
 -- | True if the element @ x @ exists in the domain of @ r @.
 
 memberDom     ::  Ord a =>  a -> Relation a b -> Bool
-memberDom x r =   isJust $ lookupDom x r
+memberDom x r =   not . S.null $ lookupDom x r
 
 
 
 -- | True if the element exists in the range.
 
 memberRan     ::  Ord b =>  b -> Relation a b -> Bool
-memberRan y r =   isJust $ lookupRan y r
+memberRan y r =   not . S.null $ lookupRan y r
 
 
 
@@ -306,9 +338,7 @@ null r  =   M.null $ domain r
 -- | True if the relation contains the association @x@ and @y@
 
 member       ::  (Ord a, Ord b) =>  a -> b -> Relation a b -> Bool
-member x y r =   case lookupDom x r of
-                      Just s  ->  S.member y s
-                      Nothing ->  False
+member x y r =   S.member y (lookupDom x r)
     
 
 
@@ -349,9 +379,9 @@ c r = Relation {
 -- The cases of 'Nothing' are purged.
 --
 -- It is similar to 'concat'.
-compactSet ::  Ord a => S.Set (Maybe (S.Set a)) -> S.Set a
+compactSet ::  Ord a => S.Set (S.Set a) -> S.Set a
 
-compactSet =   S.fold ( S.union . fromMaybe S.empty ) S.empty
+compactSet =   S.foldr S.union S.empty
 
 
 
