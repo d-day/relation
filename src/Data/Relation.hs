@@ -1,3 +1,5 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Data.Relation
@@ -90,9 +92,11 @@ module Data.Relation (
 
 where
 
-import           Prelude           hiding (null)
+import           Prelude           hiding (null,filter)
+import           Control.Arrow     (first, second)
 import           Control.Monad     (MonadPlus, guard)
 import           Data.Functor      (Functor((<$)))
+import qualified Data.List    as L
 import qualified Data.Map     as M
 import qualified Data.Set     as S
 import           Data.Maybe        (isJust, fromJust, fromMaybe)
@@ -132,7 +136,7 @@ data Relation a b  = Relation { domain ::  M.Map a (S.Set b)
 -- |  @size r@ returns the number of tuples in the relation.
 
 size    ::  Relation a b -> Int
-size r  =   M.fold ((+) . S.size) 0 (domain r)
+size r  =   M.foldr ((+) . S.size) 0 (domain r)
 
 
 
@@ -486,4 +490,39 @@ r |> t =  fromList $ concatMap
 -- 
 
 
+   -- ** Maps and filters
 
+mapDom :: (Ord a', Ord b) => (a -> a') -> Relation a b -> Relation a' b
+mapDom f = fromList . L.map (first f) . toList
+
+mapRan :: (Ord a, Ord b') => (b -> b') -> Relation a b -> Relation a b'
+mapRan f = fromList . L.map (second f) . toList
+
+filter :: (Ord a, Ord b) => (a -> b -> Bool) -> Relation a b -> Relation a b
+filter f = fromList . L.filter (uncurry f) . toList
+
+-- | = These versions are probably rarely a good idea. They require running
+-- the function argument at least twice as many times. But if the `Set`s
+-- involved are huge, and the function argument simple, it's conceivable
+-- that you would prefer rerunning the function argument to deconstructing
+-- and reconstructing the `Set`s.
+
+mapDom' :: Ord a' => (a -> a') -> Relation a b -> Relation a' b
+mapDom' f rel = Relation d r where
+  d = M.mapKeys f     $ domain rel
+  r = M.map (S.map f) $ range rel
+
+mapRan' :: Ord b' => (b -> b') -> Relation a b -> Relation a b'
+mapRan' f rel = Relation d r where
+  d = M.map (S.map f) $ domain rel
+  r = M.mapKeys f     $ range rel
+
+filter' :: forall a b. (Ord a, Ord b)
+        => (a -> b -> Bool) -> Relation a b -> Relation a b
+filter' f rel = Relation d r where
+  d = M.filter (not . S.null) $ M.mapWithKey f' $ domain rel where
+    f' :: a -> S.Set b -> S.Set b
+    f' a = S.filter $ f a
+  r = M.filter (not . S.null) $ M.mapWithKey f' $ range rel where
+    f' :: b -> S.Set a -> S.Set a
+    f' b = S.filter $ flip f b
